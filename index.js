@@ -70,11 +70,12 @@ const upDateState = (updatedMower, mowerIndex, state) => {
 const getNextDirection = (currentDirection, pivot) => {
   let nextDirection = '';
   const cardinalDirections = ['N', 'E', 'S', 'W'];
+  const lastCardinalDirectionIndex = cardinalDirections.length - 1;
   const directionIndex = cardinalDirections.indexOf(currentDirection);
   const nextDirectionIndex = directionIndex + DIRECTION_MOVE_MAP[pivot];
   if (nextDirectionIndex < 0) {  
-    return cardinalDirections[cardinalDirections.length - 1];
-  } else if (nextDirectionIndex > cardinalDirections.length - 1) {
+    return cardinalDirections[lastCardinalDirectionIndex];
+  } else if (nextDirectionIndex > lastCardinalDirectionIndex) {
     return cardinalDirections[0];
   }
   nextDirection = cardinalDirections[nextDirectionIndex];
