@@ -1,8 +1,6 @@
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
-// your code goes here
-
 const readline = require('readline');
 
 let input = [];
@@ -24,7 +22,8 @@ rl.on('close', () => {
 })
 
 const main = (input) => {
-  const [limitZone, ...mowersTest] = input;
+  let [limitZone, ...mowersTest] = input;
+  limitZone = getLimitZoneObject(limitZone);
   const mowers = getMoversTestObjects(mowersTest);
   let state = {
     limitZone,
@@ -40,20 +39,60 @@ const main = (input) => {
 }
 
 const playMowerActions = (mower, state) => {
+  const { limitZone } = state;
   const { actions, position } = mower;
   let mowerAfterAction = {...mower};
   for (let action of actions) {
+    console.log(action);
     if (isChangeDirectionAction(action)) {
-       mowerAfterAction.position.direction = getNextDirection(position.direction, action);
+      mowerAfterAction.position.direction = getNextDirection(position.direction, action);
+    } else if (isMovementAction(action)) {
+      const nextPosition = getNextPosition(position)
+      if (!isMowerOutOfZone(nextPosition, limitZone)) {
+        mowerAfterAction.position = nextPosition;
+      }
     }
   }
 
 }
 
+const isMowerOutOfZone = ({x, y}, limit) => (
+  isHoritonzalOut(x, limit) || isVerticalOut(y, limit)
+);
+
+const isHoritonzalOut = (x, limit) => (x < 0 || x > limit.x)
+const isVerticalOut = (y, limit) => (y < 0 || y > limit.x)
+
+const getNextPosition = (position) => {
+  let { x,y,direction } = position;
+  if (direction === CARDINAL_DIRECTIONS.NORD) {
+    y++;
+  } else if (direction === CARDINAL_DIRECTIONS.EAST) {
+    x++;
+  } else if (direction === CARDINAL_DIRECTIONS.WEST) {
+    x--;
+  } else {
+    y--;
+  }
+  return {
+    x,
+    y,
+    direction
+  }
+
+}
+
+
+const CARDINAL_DIRECTIONS = {
+  NORD: 'N',
+  EAST: 'E',
+  SOUTH: 'S',
+  WEST: 'W'
+}
+
 const isChangeDirectionAction = (action) => action === 'G' || action === 'D';
 
-const isMovementAction = (action) => {
-}
+const isMovementAction = (action) => action === 'A';
 
 const getNextDirection = (currentDirection, pivot) => {
   let nextDirection = '';
@@ -75,8 +114,10 @@ const getNextDirection = (currentDirection, pivot) => {
 
 const getMowerInstace = (positionString, actionsString) => {
   let position = positionString.split(' ');
-  const [x,y,direction] = position;
+  let [x,y,direction] = position;
   const actions = actionsString.split('');
+  x = Number(x);
+  y = Number(y);
   const mowerInstance = {
     position: {
       x,
@@ -86,6 +127,14 @@ const getMowerInstace = (positionString, actionsString) => {
     actions,
   }
   return mowerInstance;
+}
+
+const getLimitZoneObject = (limitZoneText) => {
+  let limitZone = limitZoneText.split(' ');
+  let [x, y] = limitZone;
+  x = Number(x);
+  y = Number(y);
+  return { x, y };
 }
 
 const getMoversTestObjects = (mowersTest) => {
