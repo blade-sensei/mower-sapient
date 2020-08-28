@@ -1,3 +1,6 @@
+const { CARDINAL_DIRECTIONS, DIRECTION_MOVE_MAP } = require('./consts');
+const { isChangeDirectionAction, isCollide, isMowerOutOfZone, isMovementAction } = require('./checkers');
+
 process.stdin.resume();
 process.stdin.setEncoding('utf8');
 
@@ -11,8 +14,6 @@ const rl = readline.createInterface({
     terminal: false,
 })
 
-
-
 rl.on('line', (line) => {
     input.push(line);
 })
@@ -24,85 +25,53 @@ rl.on('close', () => {
 const main = (input) => {
   let [limitZone, ...mowersTest] = input;
   limitZone = getLimitZoneObject(limitZone);
-  const mowers = getMoversTestObjects(mowersTest);
-  let state = {
-    limitZone,
-    mowers,
-  }
-
-  for (let mower of mowers) {
-    //test actions 
-    console.log(mower);
-    state = playMowerActions(mower, state);
-  }
-
+  mowersTest = getMoversTestObjects(mowersTest);
+  let state = { limitZone, mowers: mowersTest }
+  state.mowers.forEach((mower, index) => {
+    state = playMowerActions(mower, state, index);
+  });
+  printMowersPosition(state.mowers);
 }
 
-const playMowerActions = (mower, state) => {
+const printMowersPosition = (mowers) => (
+  mowers.forEach(({position}) => {
+    const {x,y,direction} = position;
+    console.log(`${x} ${y} ${direction}`);
+  })
+)
+
+const playMowerActions = (mower, state, mowerIndex) => {
+  let localState = {...state};
   const { limitZone } = state;
-  const { actions, position } = mower;
+  const { actions } = mower;
   let mowerAfterAction = {...mower};
   for (let action of actions) {
-    console.log(action);
+    let { position } = mowerAfterAction
     if (isChangeDirectionAction(action)) {
       mowerAfterAction.position.direction = getNextDirection(position.direction, action);
     } else if (isMovementAction(action)) {
       const nextPosition = getNextPosition(position)
-      if (!isMowerOutOfZone(nextPosition, limitZone)) {
+      if (!isMowerOutOfZone(nextPosition, limitZone)
+        && !isCollide(nextPosition, localState)) {
         mowerAfterAction.position = nextPosition;
       }
     }
+    localState = upDateState(mowerAfterAction, mowerIndex, localState);
   }
-
+  return localState;
 }
 
-const isMowerOutOfZone = ({x, y}, limit) => (
-  isHoritonzalOut(x, limit) || isVerticalOut(y, limit)
-);
-
-const isHoritonzalOut = (x, limit) => (x < 0 || x > limit.x)
-const isVerticalOut = (y, limit) => (y < 0 || y > limit.x)
-
-const getNextPosition = (position) => {
-  let { x,y,direction } = position;
-  if (direction === CARDINAL_DIRECTIONS.NORD) {
-    y++;
-  } else if (direction === CARDINAL_DIRECTIONS.EAST) {
-    x++;
-  } else if (direction === CARDINAL_DIRECTIONS.WEST) {
-    x--;
-  } else {
-    y--;
-  }
-  return {
-    x,
-    y,
-    direction
-  }
-
+const upDateState = (updatedMower, mowerIndex, state) => {
+  const localState = {...state};
+  localState.mowers[mowerIndex] = {...updatedMower};
+  return localState;
 }
-
-
-const CARDINAL_DIRECTIONS = {
-  NORD: 'N',
-  EAST: 'E',
-  SOUTH: 'S',
-  WEST: 'W'
-}
-
-const isChangeDirectionAction = (action) => action === 'G' || action === 'D';
-
-const isMovementAction = (action) => action === 'A';
 
 const getNextDirection = (currentDirection, pivot) => {
   let nextDirection = '';
-  const DIRECTION_MAP = {
-    'D': 1,
-    'G': -1
-  }
   const cardinalDirections = ['N', 'E', 'S', 'W'];
   const directionIndex = cardinalDirections.indexOf(currentDirection);
-  const nextDirectionIndex = directionIndex + DIRECTION_MAP[pivot];
+  const nextDirectionIndex = directionIndex + DIRECTION_MOVE_MAP[pivot];
   if (nextDirectionIndex < 0) {  
     return cardinalDirections[cardinalDirections.length - 1];
   } else if (nextDirectionIndex > cardinalDirections.length - 1) {
@@ -112,7 +81,7 @@ const getNextDirection = (currentDirection, pivot) => {
   return nextDirection;
 }
 
-const getMowerInstace = (positionString, actionsString) => {
+const getMowerInstaceObject = (positionString, actionsString) => {
   let position = positionString.split(' ');
   let [x,y,direction] = position;
   const actions = actionsString.split('');
@@ -142,7 +111,25 @@ const getMoversTestObjects = (mowersTest) => {
   for (let mowerIndex = 0; mowerIndex < mowersTest.length; mowerIndex+=2) {
     const position = mowersTest[mowerIndex]
     const movements = mowersTest[mowerIndex+1]
-    mowers.push(getMowerInstace(position, movements))
+    mowers.push(getMowerInstaceObject(position, movements))
   }
   return mowers;
+}
+
+const getNextPosition = (position) => {
+  let { x,y,direction } = position;
+  if (direction === CARDINAL_DIRECTIONS.NORD) {
+    y++;
+  } else if (direction === CARDINAL_DIRECTIONS.EAST) {
+    x++;
+  } else if (direction === CARDINAL_DIRECTIONS.WEST) {
+    x--;
+  } else {
+    y--;
+  }
+  return {
+    x,
+    y,
+    direction,
+  }
 }
