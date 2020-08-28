@@ -26,20 +26,64 @@ rl.on('close', () => {
 const main = (input) => {
   const [limitZone, ...mowersTest] = input;
   const mowers = getMoversTestObjects(mowersTest);
+  let state = {
+    limitZone,
+    mowers,
+  }
+
+  for (let mower of mowers) {
+    //test actions 
+    console.log(mower);
+    state = playMowerActions(mower, state);
+  }
 
 }
 
-const getMowerInstace = (place, movementsString) => {
-  let position = place.split(' ');
+const playMowerActions = (mower, state) => {
+  const { actions, position } = mower;
+  let mowerAfterAction = {...mower};
+  for (let action of actions) {
+    if (isChangeDirectionAction(action)) {
+       mowerAfterAction.position.direction = getNextDirection(position.direction, action);
+    }
+  }
+
+}
+
+const isChangeDirectionAction = (action) => action === 'G' || action === 'D';
+
+const isMovementAction = (action) => {
+}
+
+const getNextDirection = (currentDirection, pivot) => {
+  let nextDirection = '';
+  const DIRECTION_MAP = {
+    'D': 1,
+    'G': -1
+  }
+  const cardinalDirections = ['N', 'E', 'S', 'W'];
+  const directionIndex = cardinalDirections.indexOf(currentDirection);
+  const nextDirectionIndex = directionIndex + DIRECTION_MAP[pivot];
+  if (nextDirectionIndex < 0) {  
+    return cardinalDirections[cardinalDirections.length - 1];
+  } else if (nextDirectionIndex > cardinalDirections.length - 1) {
+    return cardinalDirections[0];
+  }
+  nextDirection = cardinalDirections[nextDirectionIndex];
+  return nextDirection;
+}
+
+const getMowerInstace = (positionString, actionsString) => {
+  let position = positionString.split(' ');
   const [x,y,direction] = position;
-  const movements = movementsString.split('');
+  const actions = actionsString.split('');
   const mowerInstance = {
     position: {
       x,
       y,
       direction,
     },
-    movements,
+    actions,
   }
   return mowerInstance;
 }
